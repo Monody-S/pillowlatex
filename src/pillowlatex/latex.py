@@ -57,6 +57,8 @@ class MixFont(FreeTypeFont):
 
         k = ord(char)
 
+        # print(k,self.font_dict)
+
         if k in self.font_dict:
             return self, self.font_y_correct[self.font_name]
         
@@ -241,16 +243,15 @@ class LaTexImageDraw:
         self.draw = ImageDraw.Draw(img.img)
         self.img = img
     
-    def text(self, xy: tuple[float, float], text: str, fill=None, font: MixFont | None = None, anchor=None, spacing=4, align="left", direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False, *args, **kwargs) -> None:
-        if font:
-            f, mv = font.ChoiceFontAndGetCorrent(text)
+    def text(self, xy: tuple[float, float], text: str, fill, font: MixFont, anchor=None, spacing=4, align="left", direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False, *args, **kwargs) -> None:
+        x = 0
+        for k in text:
+            f, mv = font.ChoiceFontAndGetCorrent(k)
             fs = f.size
-        else:
-            f = None
-            fs = 0
-            mv = 0
-        mv = round(mv*fs/100) if mv else 0
-        return self.draw.text((xy[0]+self.img.space, xy[1]+self.img.space - mv), text, fill, font, anchor, spacing, align, direction, features, language, stroke_width, stroke_fill, embedded_color, *args, **kwargs)
+            mv = round(mv*fs/100) if mv else 0
+            self.draw.text((xy[0]+self.img.space+x, xy[1]+self.img.space - mv), k, fill, f, anchor, spacing, align, direction, features, language, stroke_width, stroke_fill, embedded_color, *args, **kwargs)
+            xs, _ = font.GetSize(k)
+            x += xs
 
     def line(self, xy: Sequence[float], fill=None, width=1, joint=None) -> None:
         xy = [xy[0] + self.img.space, xy[1] + self.img.space, xy[2] + self.img.space, xy[3] + self.img.space]
@@ -1319,8 +1320,6 @@ def GetLaTexObjs(string: str) -> list[Union[str, LaTexFunc, LaTexReplace, list]]
             idx += 1
         
         return outs
-
-    print("objs", objs)
 
     return _DealLaTexObjs(objs)
 
