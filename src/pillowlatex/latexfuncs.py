@@ -1,8 +1,8 @@
 from .latex import (
-    RegisterLaTexFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont
+    RegisterLaTexFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont, GetLaTexTextObj
 )
 import math
-from typing import Optional
+from typing import Optional, Union
 
 @RegisterLaTexFunc("frac", needFont = True, needColor = True)
 def lt_frac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
@@ -727,4 +727,24 @@ def lt_text(a: LaTexImage) -> LaTexImage:
     a.img_type = "text"
     return a
 
-# @RegisterLaTexFunc("unicode")
+@RegisterLaTexFunc("unicode", nosmaller = True, needDeep = True, needFont = True, needColor = True, autoRender = False)
+def lt_unicode(a: Union[str, list], deep: int, font: FreeTypeFont, color) -> LaTexImage:
+    """
+    渲染Unicode样式的数学表达式
+    :param a: 表达式图像
+    :return: 渲染后的Unicode样式的表达式图像
+    """
+    text = GetLaTexTextObj(a) or ""
+
+    try:
+        char = chr(int(text))
+    except:
+        char = ""
+
+    size = GetFontSize(font, char)
+    img = LaTexImage.new(size, (255, 255, 255, 0))
+    draw = LaTexImageDraw.Draw(img)
+    draw.text((0, 0), char, font=font, fill=color)
+    img = img.resize_with_deep(deep)
+
+    return img

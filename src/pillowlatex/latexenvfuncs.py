@@ -1,6 +1,7 @@
 from .latex import(
-    RegisterLaTexEnvFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont
+    RegisterLaTexEnvFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont, GetLaTexTextObj
 )
+from typing import Union
 
 @RegisterLaTexEnvFunc("matrix", needFont = True)
 def lt_matrix(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
@@ -72,7 +73,10 @@ def lt_align(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
     return new
 
 @RegisterLaTexEnvFunc("array", needFont = True)
-def lt_array(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_array(mode: Union[str, list], objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+
+    m = GetLaTexTextObj(mode)
+
     k1 = font.size
     k2 = font.size // 2
 
@@ -90,7 +94,12 @@ def lt_array(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
 
     for i, row in enumerate(objs):
         for j, img in enumerate(row):
-            new.alpha_composite(img, (int(sum(widths[:j]) + k1 * j), int(sum(heights[:i]) + (heights[i] - img.height) // 2 + k2 * i)))
+            if m == "l":
+                new.alpha_composite(img, (int(sum(widths[:j]) + k1 * j), int(sum(heights[:i]) + (heights[i] - img.height) // 2 + k2 * i)))
+            elif m == "r":
+                new.alpha_composite(img, (int(sum(widths[:j]) + (widths[j] - img.width) + k1 * j), int(sum(heights[:i]) + (heights[i] - img.height) // 2 + k2 * i)))
+            else:
+                new.alpha_composite(img, (int(sum(widths[:j]) + (widths[j] - img.width) // 2 + k1 * j), int(sum(heights[:i]) + (heights[i] - img.height) // 2 + k2 * i)))
     
     return new
 

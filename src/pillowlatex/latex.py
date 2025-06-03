@@ -876,15 +876,23 @@ def RenderLaTexObjs(
                     theobjs = [[]]
                     nowobjs = []
 
-                    exagrs = []
+                    env_func = env_funcs[lefta]
 
-                    ex = 2
-                    if lefta == "array":
-                        if idx + 2 < sz and isinstance(objs[idx + 2], str) and objs[idx + 2] in ["c", "l", "r"]:
-                            exargs.append(objs[idx + 2])
-                        ex += 1
+                    exargs = []
+                    if env_func.needFont:
+                        exargs.append(font)
+                    if env_func.needColor:
+                        exargs.append(color)
+                    needargnum = len(env_func.argsTypes) - len(exargs) - 1
 
-                    tidx = idx + ex
+                    args = objs[idx + 2: idx + 2 + needargnum]
+
+                    if len(args) != needargnum:
+                        print("warning: LaTeX environment argument count mismatch for", lefta)
+                        idx += 1
+                        continue
+
+                    tidx = idx + 2 + needargnum
                     while tidx < temp_idx:
                         i = objs[tidx]
                         if i == "&":
@@ -903,16 +911,12 @@ def RenderLaTexObjs(
                     if nowobjs:                    
                         theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color))
 
-                    exargs = []
-                    if env_funcs[lefta].needFont:
-                        exargs.append(font)
-                    if env_funcs[lefta].needColor:
-                        exargs.append(color)
-
                     if not theobjs[-1]:
                         del theobjs[-1]
                     
-                    img = env_funcs[lefta].Render(*[theobjs]+exargs)
+                    print(args)
+                    
+                    img = env_func.Render(*args+[theobjs]+exargs)
                     imgs.append(img)
                     img.img_type = lefta
 
