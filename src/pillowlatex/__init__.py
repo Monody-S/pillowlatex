@@ -3,6 +3,8 @@ from .latex import (
     LaTexFunc,
     LaTexEnvFunc,
     LaTexImageDraw,
+
+    MixFont,
     
     middle_lowandpows,
     auto_middle_replaces,
@@ -29,6 +31,8 @@ __all__ = [
     "LaTexFunc",
     "LaTexEnvFunc",
     "LaTexImageDraw",
+
+    "MixFont",
     
     "middle_lowandpows",
     "auto_middle_replaces",

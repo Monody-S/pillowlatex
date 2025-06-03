@@ -1,11 +1,11 @@
 from .latex import (
-    RegisterLaTexFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont, GetLaTexTextObj
+    RegisterLaTexFunc, LaTexImage, LaTexImageDraw, GetFontSize, MixFont, GetLaTexTextObj
 )
 import math
 from typing import Optional, Union
 
 @RegisterLaTexFunc("frac", needFont = True, needColor = True)
-def lt_frac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_frac(a: LaTexImage, b: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染分数
     :param a: 分子图像
@@ -16,12 +16,10 @@ def lt_frac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexIma
     # a = a.resize((int(a.width * 0.8), int(a.height * 0.8)))
     # b = b.resize((int(b.width * 0.8), int(b.height * 0.8)))
 
-    print(b.size)
     k = math.ceil(font.size / 5)
     ls = math.ceil(font.size / 20)
     width = max(a.width, b.width) + k
     height = a.height + b.height + k
-    print(f"width: {width}, height: {height}")
     img = LaTexImage.new((width, height), (255, 255, 255, 0))
     draw = LaTexImageDraw.Draw(img)
     draw.line((0, a.height + k // 2, width, a.height + k // 2), fill=color, width=ls)
@@ -30,7 +28,7 @@ def lt_frac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexIma
     return img
 
 @RegisterLaTexFunc("tfrac", needFont = True, needColor = True)
-def lt_tfrac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_tfrac(a: LaTexImage, b: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染小分数
     :param a: 分子图像
@@ -41,12 +39,10 @@ def lt_tfrac(a: LaTexImage, b: LaTexImage, font: FreeTypeFont, color) -> LaTexIm
     # a = a.resize((int(a.width * 0.8), int(a.height * 0.8)))
     # b = b.resize((int(b.width * 0.8), int(b.height * 0.8)))
 
-    print(b.size)
     k = math.ceil(font.size / 5)
     ls = math.ceil(font.size / 20)
     width = max(a.width, b.width) + k
     height = a.height + b.height + k
-    print(f"width: {width}, height: {height}")
     img = LaTexImage.new((width, height), (255, 255, 255, 0))
     draw = LaTexImageDraw.Draw(img)
     draw.line((0, a.height + k // 2, width, a.height + k // 2), fill=color, width=ls)
@@ -75,10 +71,7 @@ def lt_operatorname(a: LaTexImage) -> LaTexImage:
     return a
 
 @RegisterLaTexFunc("sqrt", nonenum = 1, needFont = True, needColor = True)
-def lt_sqrt(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
-
-    print("b",b.size)
-    print(a)
+def lt_sqrt(a: Optional[LaTexImage], b: LaTexImage, font: MixFont, color) -> LaTexImage:
     
     x = b.width + 10
     y = b.height + 10
@@ -102,7 +95,6 @@ def lt_sqrt(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, color) -
     draw.line((xb + 3, img.height - (b.height // 2), 0, img.height - (b.height // 2)), fill=color, width=ls)
 
     if a:
-        print((max(0, xb + 5 - a.width), img.height - b.height // 2 - a.height))
         img.alpha_composite(a, (max(0, xb + 5 - a.width), img.height - b.height // 2 - a.height))
         # draw.rectangle((5, 0, 5+a.width, a.height), fill=(255, 255, 255, 100))
 
@@ -110,7 +102,7 @@ def lt_sqrt(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, color) -
     return img
 
 @RegisterLaTexFunc("dot", nosmaller=True, needFont = True, needColor = True)
-def lt_dot(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_dot(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染一阶导数
     :param a: 点图像
@@ -133,7 +125,7 @@ def lt_dot(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("ddot", nosmaller=True, needFont = True, needColor = True)
-def lt_ddot(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_ddot(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染二阶导数
     :param a: 点图像
@@ -157,7 +149,7 @@ def lt_ddot(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("pmod", needDeep=True, nosmaller=True, needFont = True, needColor = True)
-def lt_pmod(a: LaTexImage, deep: int, font: FreeTypeFont, color) -> LaTexImage:
+def lt_pmod(a: LaTexImage, deep: int, font: MixFont, color) -> LaTexImage:
     """
     渲染模运算
     :param a: 模数图像
@@ -178,8 +170,6 @@ def lt_pmod(a: LaTexImage, deep: int, font: FreeTypeFont, color) -> LaTexImage:
 
     xe1, ye1 = img1.size
     xe2, ye2 = img2.size
-
-    print(f"xe1: {xe1}, ye1: {ye1}, xe2: {xe2}, ye2: {ye2}")
 
     new = LaTexImage.new((a.width + xe1 + xe2, max(a.height, ye1, ye2)), (255, 255, 255, 0))
 
@@ -203,7 +193,7 @@ def lt_sideset(a: LaTexImage, b: LaTexImage, c: LaTexImage) -> LaTexImage:
     return new
 
 @RegisterLaTexFunc("hat", nosmaller=True, needFont = True, needColor = True)
-def lt_hat(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_hat(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -222,7 +212,7 @@ def lt_hat(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("check", nosmaller=True, needFont = True, needColor = True)
-def lt_check(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_check(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -241,7 +231,7 @@ def lt_check(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("grave", nosmaller=True, needFont = True, needColor = True)
-def lt_grave(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_grave(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -260,7 +250,7 @@ def lt_grave(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("acute", nosmaller=True, needFont = True, needColor = True)
-def lt_acute(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_acute(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -279,7 +269,7 @@ def lt_acute(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("tilde", nosmaller=True, needFont = True, needColor = True)
-def lt_tilde(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_tilde(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -298,7 +288,7 @@ def lt_tilde(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("breve", nosmaller=True, needFont = True, needColor = True)
-def lt_breve(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_breve(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -317,7 +307,7 @@ def lt_breve(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("bar", nosmaller=True, needFont = True, needColor = True)
-def lt_bar(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_bar(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -336,7 +326,7 @@ def lt_bar(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("vec", nosmaller=True, needFont = True, needColor = True)
-def lt_vec(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_vec(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -355,7 +345,7 @@ def lt_vec(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("not", nosmaller=True, needDeep=True, needFont = True, needColor = True)
-def lt_not(a: LaTexImage, deep: int, font: FreeTypeFont, color) -> LaTexImage:
+def lt_not(a: LaTexImage, deep: int, font: MixFont, color) -> LaTexImage:
     """
     渲染not符号
     :param a: 表达式图像
@@ -375,7 +365,7 @@ def lt_not(a: LaTexImage, deep: int, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("widetilde", nosmaller=True, needFont = True, needColor = True)
-def lt_widetilde(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_widetilde(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -398,7 +388,7 @@ def lt_widetilde(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("widehat", nosmaller=True, needFont = True, needColor = True)
-def lt_widehat(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_widehat(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -421,7 +411,7 @@ def lt_widehat(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("overleftarrow", nosmaller=True, needFont = True, needColor = True)
-def lt_overleftarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_overleftarrow(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -444,7 +434,7 @@ def lt_overleftarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("overrightarrow", nosmaller=True, needFont = True, needColor = True)
-def lt_overrightarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_overrightarrow(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -467,7 +457,7 @@ def lt_overrightarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return img
 
 @RegisterLaTexFunc("overline", nosmaller=True, needFont = True, needColor = True)
-def lt_overline(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_overline(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -485,7 +475,7 @@ def lt_overline(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return new
 
 @RegisterLaTexFunc("underline", nosmaller=True, needFont = True, needColor = True)
-def lt_underline(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_underline(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -503,7 +493,7 @@ def lt_underline(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return new
 
 @RegisterLaTexFunc("overbrace", nosmaller=True, needFont = True, needColor = True)
-def lt_overbrace(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_overbrace(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -528,7 +518,7 @@ def lt_overbrace(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
     return new
 
 @RegisterLaTexFunc("underbrace", nosmaller=True, needFont = True, needColor = True)
-def lt_underbrace(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_underbrace(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -595,7 +585,7 @@ def lt_stackrel(a: LaTexImage, b: LaTexImage) -> LaTexImage:
     return new
 
 @RegisterLaTexFunc("overleftrightarrow", nosmaller=True, needFont = True, needColor = True)
-def lt_overleftrightarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_overleftrightarrow(a: LaTexImage, font: MixFont, color) -> LaTexImage:
     """
     渲染带帽的数学表达式
     :param a: 表达式图像
@@ -619,7 +609,7 @@ def lt_overleftrightarrow(a: LaTexImage, font: FreeTypeFont, color) -> LaTexImag
     return new
 
 @RegisterLaTexFunc("xleftarrow", nonenum = 1, needFont = True, needColor = True)
-def lt_xleftarrow(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_xleftarrow(a: Optional[LaTexImage], b: LaTexImage, font: MixFont, color) -> LaTexImage:
     k = GetFontSize(font, "a")[0]
     height = int(font.size)
 
@@ -646,7 +636,7 @@ def lt_xleftarrow(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, co
     return new
 
 @RegisterLaTexFunc("xrightarrow", nonenum = 1, needFont = True, needColor = True)
-def lt_xrightarrow(a: Optional[LaTexImage], b: LaTexImage, font: FreeTypeFont, color) -> LaTexImage:
+def lt_xrightarrow(a: Optional[LaTexImage], b: LaTexImage, font: MixFont, color) -> LaTexImage:
     k = GetFontSize(font, "a")[0]
     height = int(font.size)
 
@@ -683,7 +673,7 @@ def lt_textstyle(a: LaTexImage) -> LaTexImage:
     return a
 
 @RegisterLaTexFunc("binom", nosmaller=True, needDeep=True, needFont = True, needColor = True)
-def lt_binom(a: LaTexImage, b: LaTexImage, deep: int, font: FreeTypeFont, color) -> LaTexImage:
+def lt_binom(a: LaTexImage, b: LaTexImage, deep: int, font: MixFont, color) -> LaTexImage:
     """
     渲染二项式系数
     :param a: 上标图像
@@ -728,7 +718,7 @@ def lt_text(a: LaTexImage) -> LaTexImage:
     return a
 
 @RegisterLaTexFunc("unicode", nosmaller = True, needDeep = True, needFont = True, needColor = True, autoRender = False)
-def lt_unicode(a: Union[str, list], deep: int, font: FreeTypeFont, color) -> LaTexImage:
+def lt_unicode(a: Union[str, list], deep: int, font: MixFont, color) -> LaTexImage:
     """
     渲染Unicode样式的数学表达式
     :param a: 表达式图像

@@ -1,11 +1,106 @@
 from PIL import Image, ImageFont, ImageDraw
 from typing import Callable, Union, Sequence, Optional, Any
 from PIL.ImageFont import FreeTypeFont
-import math
+from pathlib import Path
+from fontTools.ttLib import TTFont
+
+class MixFont(FreeTypeFont):
+    def __init__(
+            self, 
+            font:Union[Path, str], 
+            size=10, 
+            index=0, 
+            encoding="", 
+            layout_engine=None,
+            second_fonts: Optional[list[Union[str, Path]]] = None,
+            font_y_correct: Optional[dict[str, float]] = None
+        ) -> None:
+        super().__init__(font, size, index, encoding, layout_engine)
+
+        second_fonts = second_fonts if second_fonts else []
+        font_y_correct = font_y_correct if font_y_correct else {}
+
+        font = Path(font) if isinstance(font, str) else font
+        fonts: list[Path] = [Path(i) if isinstance(i, str) else i for i in second_fonts]
+
+        self.font_y_correct = {i:(font_y_correct[i] if i in font_y_correct else 0) for i in [font.name] + [second_font.name for second_font in fonts]}
+
+        self.font_name = font.name
+
+        self.seconde_fonts = {second_font.name:FreeTypeFont(second_font,size) for second_font in fonts}
+        self.font_dict = TTFont(font)
+        self.font_dict = self.font_dict['cmap'].tables[0].ttFont.getBestCmap().keys() #type: ignore
+
+        def _GetD(font:Union[str, Path]) -> TTFont:
+            k = TTFont(font)
+            return k['cmap'].tables[0].ttFont.getBestCmap().keys() #type: ignore
+
+        self.seconde_font_dict = {
+            second_font.name:_GetD(second_font)
+            for second_font in fonts
+        }
+    
+    def ChoiceFont(self,char:str) -> FreeTypeFont:
+
+        k = ord(char)
+
+        if k in self.font_dict:
+            return self
+        
+        for second_font in self.seconde_font_dict:
+            if k in self.seconde_font_dict[second_font]:
+                return self.seconde_fonts[second_font]
+        
+        return self
+    
+    def ChoiceFontAndGetCorrent(self,char:str) -> tuple[FreeTypeFont, float]:
+
+        k = ord(char)
+
+        if k in self.font_dict:
+            return self, self.font_y_correct[self.font_name]
+        
+        for second_font in self.seconde_font_dict:
+            if k in self.seconde_font_dict[second_font]:
+                return self.seconde_fonts[second_font], self.font_y_correct[second_font]
+        
+        return self, self.font_y_correct[self.font_name]
+
+    def CheckChar(self,char:str) -> bool:
+        return ord(char) in self.font_dict
+
+    def GetSize(self,text) -> tuple[int,int]:
+
+        outObj = self
+        rawObj = self
+
+        if rawObj not in size_cache:
+            size_cache[rawObj] = {}
+        
+        if text in size_cache[rawObj]:
+            return size_cache[rawObj][text]
+
+        if not text:
+            size_cache[rawObj][text] = (0,0)
+            return (0,0)
+        for char in text:
+            try:
+                if not outObj.CheckChar(char):
+                    outObj = outObj.ChoiceFont(char)
+                    break
+            except:
+                pass
+        temp = outObj.getbbox(text)
+        rt = (int(temp[2]-temp[0]), int(temp[3]-temp[1]))
+
+        size_cache[rawObj][text] = rt
+        return rt
+
+size_cache:dict[MixFont,dict[str,tuple[int,int]]] = {}
 
 from .import settings
 
-df_font = ImageFont.truetype(settings.FONT_PATH, 50)
+df_font = MixFont(settings.FONT_PATH, 50)
 SPACE = settings.SPACE
 
 class LaTexReplace:
@@ -146,8 +241,16 @@ class LaTexImageDraw:
         self.draw = ImageDraw.Draw(img.img)
         self.img = img
     
-    def text(self, xy: tuple[float, float], text: str, fill=None, font: ImageFont.ImageFont | FreeTypeFont | ImageFont.TransposedFont | None = None, anchor=None, spacing=4, align="left", direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False, *args, **kwargs) -> None:
-        return self.draw.text((xy[0]+self.img.space, xy[1]+self.img.space), text, fill, font, anchor, spacing, align, direction, features, language, stroke_width, stroke_fill, embedded_color, *args, **kwargs)
+    def text(self, xy: tuple[float, float], text: str, fill=None, font: MixFont | None = None, anchor=None, spacing=4, align="left", direction=None, features=None, language=None, stroke_width=0, stroke_fill=None, embedded_color=False, *args, **kwargs) -> None:
+        if font:
+            f, mv = font.ChoiceFontAndGetCorrent(text)
+            fs = f.size
+        else:
+            f = None
+            fs = 0
+            mv = 0
+        mv = round(mv*fs/100) if mv else 0
+        return self.draw.text((xy[0]+self.img.space, xy[1]+self.img.space - mv), text, fill, font, anchor, spacing, align, direction, features, language, stroke_width, stroke_fill, embedded_color, *args, **kwargs)
 
     def line(self, xy: Sequence[float], fill=None, width=1, joint=None) -> None:
         xy = [xy[0] + self.img.space, xy[1] + self.img.space, xy[2] + self.img.space, xy[3] + self.img.space]
@@ -732,18 +835,14 @@ def lt_low(a: LaTexImage, b: LaTexImage) -> LaTexImage:
 #     func=lt_cexdoubleleftrightarrow
 # )
 
-def GetFontSize(font:FreeTypeFont,string: str) -> tuple[int, int]:
+def GetFontSize(font:MixFont,string: str) -> tuple[int, int]:
     """
     获取字符串在指定字体下的大小
     :param font: 字体对象
     :param string: 字符串
     :return: 字符串的宽度和高度
     """
-    box = font.getbbox(string)
-    width = box[2] - box[0]
-    height = box[3] - box[1]
-    print(width, height)
-    return int(width), int(height)
+    return font.GetSize(string)
 
 def GetLaTexTextObj(objs: Union[str, list, Any]) -> Optional[str]:
     if isinstance(objs, str):
@@ -757,14 +856,19 @@ def RenderLaTexObjs(
     objs: Union[str, list], 
     deep: int = 0, 
     include: bool = False,
-    font: FreeTypeFont = df_font,
-    color: Optional[Union[str, tuple[int, int, int, int], tuple[int, int, int]]] = None
+    font: MixFont = df_font,
+    color: Optional[Union[str, tuple[int, int, int, int], tuple[int, int, int]]] = None,
+    debug: bool = False
 ) -> list[LaTexImage]:
     """
     渲染LaTeX对象列表
     :param objs: LaTeX对象列表
     :return: 渲染后的图像
     """
+
+    def debug_print(*args, **kwargs):
+        if debug:
+            print(*args, **kwargs)
 
     if not color:
         color = (0, 0, 0, 255)
@@ -800,11 +904,11 @@ def RenderLaTexObjs(
 
             args = objs[idx + 1:idx + 1 + len(obj.argsTypes) - obj.nonenum - len(exargs)]
 
-            print(obj.key, args)
+            debug_print(obj.key, args)
 
             if len(args) != len(obj.argsTypes) - (1 if obj.nonenum else 0) - len(exargs):
-                print(len(args) , len(obj.argsTypes) - (1 if obj.nonenum else 0) - len(exargs))
-                print("warning: LaTeX function argument count mismatch for", obj.key)
+                debug_print(len(args) , len(obj.argsTypes) - (1 if obj.nonenum else 0) - len(exargs))
+                debug_print("warning: LaTeX function argument count mismatch for", obj.key)
             else:
                 try:
                     input_args = []
@@ -812,7 +916,7 @@ def RenderLaTexObjs(
                         input_args.extend([None] * (obj.nonenum - len(fill)) + fill)
                     input_args.extend(args)
                     img = obj.Render(*[
-                        (RenderLaTex(i, (deep if obj.nosmaller else deep + 1), include or not obj.nosmaller, font, color) if not i is None else None )
+                        (RenderLaTex(i, (deep if obj.nosmaller else deep + 1), include or not obj.nosmaller, font, color, debug) if not i is None else None )
                         
                         if obj.autoRender else i
                         
@@ -827,10 +931,10 @@ def RenderLaTexObjs(
 
                     continue
                 except Exception as e:
-                    print(f"Error rendering LaTeX function '{obj.key}': {e}")
+                    debug_print(f"Error rendering LaTeX function '{obj.key}': {e}")
         elif isinstance(obj, LaTexReplace):
-            print("replace", obj.key, obj.after)
-            img = RenderLaTex(obj.after, deep, include, font, color)
+            debug_print("replace", obj.key, obj.after)
+            img = RenderLaTex(obj.after, deep, include, font, color, debug)
             if obj.key in big_replaces:
                 img = img.resize((img.width * 2, img.height * 2))
             elif obj.key in high_replaces:
@@ -842,14 +946,14 @@ def RenderLaTexObjs(
             elif obj.key == "begin":
                 k = 1
                 if not idx + 1 < sz:
-                    print("warning0")
+                    debug_print("warning0")
                     idx += 1
                     continue
 
                 lefta = GetLaTexTextObj(objs[idx + 1])
 
                 if lefta not in env_funcs:
-                    print("warning5")
+                    debug_print("warning5")
                     idx += 1
                     continue
 
@@ -857,7 +961,7 @@ def RenderLaTexObjs(
 
                 while temp_idx < sz:
                     tobj = objs[temp_idx]
-                    print(tobj)
+                    debug_print(tobj)
                     if isinstance(tobj, LaTexReplace) and tobj.key == "end" and temp_idx + 1 < sz and GetLaTexTextObj(objs[temp_idx + 1]) == lefta:
                         k -= 1
                         if k == 0:
@@ -867,8 +971,8 @@ def RenderLaTexObjs(
                     temp_idx += 1
                 
                 if not temp_idx < sz or k != 0:
-                    print(temp_idx < sz)
-                    print("warning6")
+                    debug_print(temp_idx < sz)
+                    debug_print("warning6")
                     idx += 1
                     continue
                     
@@ -888,7 +992,7 @@ def RenderLaTexObjs(
                     args = objs[idx + 2: idx + 2 + needargnum]
 
                     if len(args) != needargnum:
-                        print("warning: LaTeX environment argument count mismatch for", lefta)
+                        debug_print("warning: LaTeX environment argument count mismatch for", lefta)
                         idx += 1
                         continue
 
@@ -896,10 +1000,10 @@ def RenderLaTexObjs(
                     while tidx < temp_idx:
                         i = objs[tidx]
                         if i == "&":
-                            theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color))
+                            theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color, debug))
                             nowobjs = []
                         elif isinstance(i, LaTexReplace) and i.key == "\\":
-                            theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color))
+                            theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color, debug))
                             theobjs.append([])
                             nowobjs = []
 
@@ -909,12 +1013,12 @@ def RenderLaTexObjs(
                         tidx += 1
 
                     if nowobjs:                    
-                        theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color))
+                        theobjs[-1].append(RenderLaTex(nowobjs, deep, include, font, color, debug))
 
                     if not theobjs[-1]:
                         del theobjs[-1]
                     
-                    print(args)
+                    debug_print(args)
                     
                     img = env_func.Render(*args+[theobjs]+exargs)
                     imgs.append(img)
@@ -927,15 +1031,15 @@ def RenderLaTexObjs(
             elif obj.key == "left":
                 k = 1
                 if not idx + 1 < sz:
-                    print("warning1")
+                    debug_print("warning1")
                     idx += 1
                     continue
                 lefta = objs[idx + 1]
                 temp_idx = idx + 2
-                print("lefta", lefta)
+                debug_print("lefta", lefta)
                 while temp_idx < sz:
                     tobj = objs[temp_idx]
-                    print(tobj)
+                    debug_print(tobj)
                     if isinstance(tobj, LaTexReplace) and tobj.key == "right":
                         k -= 1
                         if k == 0:
@@ -943,28 +1047,28 @@ def RenderLaTexObjs(
                     elif isinstance(tobj, LaTexReplace) and tobj.key == "left":
                         k += 1
                     temp_idx += 1
-                print(k)
+                debug_print(k)
                 if not temp_idx < sz or k != 0:
-                    print(temp_idx < sz)
-                    print("warning2")
+                    debug_print(temp_idx < sz)
+                    debug_print("warning2")
                     idx += 1
                     continue
 
                 if isinstance(objs[temp_idx], LaTexReplace) and objs[temp_idx].key == "right":
                     if not temp_idx + 1 < sz:
-                        print("warning3")
+                        debug_print("warning3")
                         idx += 1
                         continue
                     righta = objs[temp_idx + 1]
                     if not (isinstance(righta, str) or isinstance(righta, LaTexReplace) and righta.key in ex_replaces) or not (isinstance(lefta, str) or isinstance(lefta, LaTexReplace) and lefta.key in ex_replaces):
-                        print(lefta, righta, "rl")
-                        print("warning4")
+                        debug_print(lefta, righta, "rl")
+                        debug_print("warning4")
                         idx += 1
                         continue
                     
-                    img1 = RenderLaTex([lefta], deep, include, font, color) if lefta != "." else LaTexImage.new((1, 1))
-                    img2 = RenderLaTex([righta], deep, include, font, color) if righta != "." else LaTexImage.new((1, 1))
-                    middles = RenderLaTex(objs[idx + 2:temp_idx], deep, include, font, color)
+                    img1 = RenderLaTex([lefta], deep, include, font, color, debug) if lefta != "." else LaTexImage.new((1, 1))
+                    img2 = RenderLaTex([righta], deep, include, font, color, debug) if righta != "." else LaTexImage.new((1, 1))
+                    middles = RenderLaTex(objs[idx + 2:temp_idx], deep, include, font, color, debug)
                     new = LaTexImage.new((img1.width + img2.width + middles.width, max(img1.height, img2.height, middles.height)), (255, 255, 255, 0))
                     img1 = img1.resize((img1.width, new.height))
                     img2 = img2.resize((img2.width, new.height))
@@ -983,13 +1087,13 @@ def RenderLaTexObjs(
                         try:
                             char = chr(int(code))
                         except:
-                            print(f"Invalid Unicode code point: {code}")
+                            debug_print(f"Invalid Unicode code point: {code}")
                             char = ""
-                        img = RenderLaTex(char, deep, include, font, color)
+                        img = RenderLaTex(char, deep, include, font, color, debug)
                         imgs.append(img)
                     idx += 2
                 else:
-                    print("warning7")
+                    debug_print("warning7")
                     idx += 1
                 continue
 
@@ -1002,9 +1106,9 @@ def RenderLaTexObjs(
         elif obj == "^":
             if idx + 1 < sz:
                 base = imgs[-1] if imgs else LaTexImage.new((1, int(font.size*DeepToK(deep))), (255, 255, 255, 0))
-                exponent = RenderLaTex(objs[idx + 1], deep, True, font, color)
+                exponent = RenderLaTex(objs[idx + 1], deep, True, font, color, debug)
 
-                print("base",base.size)
+                debug_print("base",base.size)
 
                 if base.img_type == "low":
                     img = lt_pow(base, exponent)
@@ -1028,9 +1132,9 @@ def RenderLaTexObjs(
         elif obj == "_":
             if idx + 1 < sz:
                 base = imgs[-1] if imgs else LaTexImage.new((1, int(font.size*DeepToK(deep))), (255, 255, 255, 0))
-                exponent = RenderLaTex(objs[idx + 1], deep, True, font, color)
+                exponent = RenderLaTex(objs[idx + 1], deep, True, font, color, debug)
 
-                print("base",base.size)
+                debug_print("base",base.size)
 
                 if base.img_type == "pow":
                     img = lt_low(base, exponent)
@@ -1039,7 +1143,7 @@ def RenderLaTexObjs(
                     new.alpha_composite(img, (0, (new.height - img.height) // 2))
                     imgs[-1] = new
                 elif base.img_type in middle_lowandpows or (base.img_type in auto_middle_replaces and deep == 0 and not include):
-                    print("mv", base.img_type, deep)
+                    debug_print("mv", base.img_type, deep)
                     img = exponent.resize_with_k(2/3)
                     new = LaTexImage.new((max(base.width, img.width), base.height+img.height), (255, 255, 255, 0))
                     new.alpha_composite(base, ((new.width - base.width)//2, 0))
@@ -1060,16 +1164,16 @@ def RenderLaTexObjs(
 
             if deep != 0:
                 k = max(0.5, 1-deep *0.2)
-                print(k)
-                print(img.size)
+                debug_print(k)
+                debug_print(img.size)
                 img = img.resize_with_deep(deep)
 
             imgs.append(img)
         elif isinstance(obj, list):
-            img = RenderLaTex(obj, deep, include, font, color)
+            img = RenderLaTex(obj, deep, include, font, color, debug)
             imgs.append(img)
         else:
-            print(f"Unsupported LaTeX object type: {type(obj)}")
+            debug_print(f"Unsupported LaTeX object type: {type(obj)}")
         idx += 1
     
     return imgs
@@ -1078,15 +1182,16 @@ def RenderLaTex(
     objs: Union[str, list], 
     deep: int = 0, 
     include: bool = False,
-    font: FreeTypeFont = df_font,
-    color: Optional[Union[str, tuple[int, int, int, int], tuple[int, int, int]]] = None
+    font: MixFont = df_font,
+    color: Optional[Union[str, tuple[int, int, int, int], tuple[int, int, int]]] = None,
+    debug: bool = False
 ) -> LaTexImage:
     """
     渲染LaTeX对象列表并返回合成后的图像
     :param objs: LaTeX对象列表
     :return: 渲染后的图像
     """
-    imgs = RenderLaTexObjs(objs, deep, include, font, color)
+    imgs = RenderLaTexObjs(objs, deep, include, font, color, debug)
 
     width = sum(img.width for img in imgs)
     height = max(img.height for img in imgs) if imgs else 0
@@ -1150,6 +1255,7 @@ def GetLaTexObjs(string: str) -> list[Union[str, LaTexFunc, LaTexReplace, list]]
         idx += 1
 
     def _DealLaTexObjs(objs: list[Union[str, LaTexFunc, LaTexReplace, list]]) -> list[Union[str, LaTexFunc, LaTexReplace, list]]:
+
         sz = len(objs)
         idx = 0
         outs = []
@@ -1158,7 +1264,6 @@ def GetLaTexObjs(string: str) -> list[Union[str, LaTexFunc, LaTexReplace, list]]
             obj = objs[idx]
             if isinstance(obj, LaTexReplace) and obj.key == "begin":
                 if idx + 1 < sz:
-                    print(objs[idx + 1])
                     lefta = GetLaTexTextObj(objs[idx + 1])
 
                     if lefta in env_funcs:
@@ -1182,7 +1287,6 @@ def GetLaTexObjs(string: str) -> list[Union[str, LaTexFunc, LaTexReplace, list]]
                         if isinstance(obj, LaTexReplace) and obj.key == "end" and temp_idx + 1 < sz and GetLaTexTextObj(objs[temp_idx + 1]) == lefta:
                             outs.append([objs[idx], objs[idx + 1], *_DealLaTexObjs(objs[idx+2:temp_idx]), objs[temp_idx], objs[temp_idx + 1]])
                             idx = temp_idx + 2
-                            print("outs", outs[-1])
                             continue
 
             # elif isinstance(obj, LaTexReplace) and obj.key == "ce":

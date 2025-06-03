@@ -1,10 +1,10 @@
 from .latex import(
-    RegisterLaTexEnvFunc, LaTexImage, LaTexImageDraw, GetFontSize, FreeTypeFont, GetLaTexTextObj
+    RegisterLaTexEnvFunc, LaTexImage, LaTexImageDraw, GetFontSize, MixFont, GetLaTexTextObj
 )
 from typing import Union
 
 @RegisterLaTexEnvFunc("matrix", needFont = True)
-def lt_matrix(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_matrix(objs: list[list[LaTexImage]], font: MixFont) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -27,7 +27,7 @@ def lt_matrix(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
     return new
 
 @RegisterLaTexEnvFunc("align*", needFont = True)
-def lt_aligns(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_aligns(objs: list[list[LaTexImage]], font: MixFont) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -50,7 +50,7 @@ def lt_aligns(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
     return new
 
 @RegisterLaTexEnvFunc("align", needFont = True)
-def lt_align(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_align(objs: list[list[LaTexImage]], font: MixFont) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -73,7 +73,7 @@ def lt_align(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
     return new
 
 @RegisterLaTexEnvFunc("array", needFont = True)
-def lt_array(mode: Union[str, list], objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_array(mode: Union[str, list], objs: list[list[LaTexImage]], font: MixFont) -> LaTexImage:
 
     m = GetLaTexTextObj(mode)
 
@@ -104,7 +104,7 @@ def lt_array(mode: Union[str, list], objs: list[list[LaTexImage]], font: FreeTyp
     return new
 
 @RegisterLaTexEnvFunc("eqnarray", needFont = True)
-def lt_eqnarray(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
+def lt_eqnarray(objs: list[list[LaTexImage]], font: MixFont) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -127,7 +127,7 @@ def lt_eqnarray(objs: list[list[LaTexImage]], font: FreeTypeFont) -> LaTexImage:
     return new
 
 @RegisterLaTexEnvFunc("bmatrix", needFont = True, needColor = True)
-def lt_bmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_bmatrix(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -166,7 +166,7 @@ def lt_bmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTex
     return new2
 
 @RegisterLaTexEnvFunc("pmatrix", needFont = True, needColor = True)
-def lt_pmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_pmatrix(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -207,7 +207,7 @@ def lt_pmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTex
     return new2
 
 @RegisterLaTexEnvFunc("vmatrix", needFont = True, needColor = True)
-def lt_vmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_vmatrix(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -245,7 +245,7 @@ def lt_vmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTex
     return new2
 
 @RegisterLaTexEnvFunc("Vmatrix", needFont = True, needColor = True)
-def lt_Vmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_Vmatrix(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -284,7 +284,7 @@ def lt_Vmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTex
     return new2
 
 @RegisterLaTexEnvFunc("Bmatrix", needFont = True, needColor = True)
-def lt_Bmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_Bmatrix(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
@@ -326,7 +326,7 @@ def lt_Bmatrix(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTex
     return new2
 
 @RegisterLaTexEnvFunc("cases", needFont = True, needColor = True)
-def lt_cases(objs: list[list[LaTexImage]], font: FreeTypeFont, color) -> LaTexImage:
+def lt_cases(objs: list[list[LaTexImage]], font: MixFont, color) -> LaTexImage:
     k1 = font.size
     k2 = font.size // 2
 
