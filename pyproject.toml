@@ -1,0 +1,40 @@
+[project]
+name = "pillowlatex"
+description = "基于 Pillow 的简易 LaTeX 渲染库，用于快速渲染大模型返回的 LaTeX 公式为图片。"
+authors = [{ name = "迷梦龙", email = "614675349@qq.com" }]
+dependencies = [
+    'pillow',
+    'pyyaml',
+    'httpx',
+    'fonttools'
+]
+requires-python = ">=3.11,<4.0"
+readme = "README.md"
+license = "MIT"
+keywords = ["latex", "pillow", "image", "rendering", "custom"]
+classifiers=[
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: Developers',
+    'Natural Language :: Chinese (Simplified)',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Operating System :: OS Independent',
+    'Topic :: Software Development :: Libraries :: Python Modules'
+]
+dynamic = [
+  "version",
+]
+
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["pillowlatex"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pillowlatex.__version__" }
