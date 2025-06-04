@@ -1,8 +1,8 @@
 from .latex import (
-    LaTexImage,
-    LaTexFunc,
-    LaTexEnvFunc,
-    LaTexImageDraw,
+    LaTeXImage,
+    LaTeXFunc,
+    LaTeXEnvFunc,
+    LaTeXImageDraw,
 
     MixFont,
     
@@ -12,12 +12,12 @@ from .latex import (
     high_replaces,
     replaces,
 
-    RenderLaTex,
-    RenderLaTexObjs,
-    GetLaTexObjs,
+    RenderLaTeX,
+    RenderLaTeXObjs,
+    GetLaTeXObjs,
 
-    RegisterLaTexEnvFunc,
-    RegisterLaTexFunc
+    RegisterLaTeXEnvFunc,
+    RegisterLaTeXFunc
 )
 
 from . import settings
@@ -25,12 +25,12 @@ from . import settings
 from .latexenvfuncs import *
 from .latexfuncs import *
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __all__ = [
-    "LaTexImage",
-    "LaTexFunc",
-    "LaTexEnvFunc",
-    "LaTexImageDraw",
+    "LaTeXImage",
+    "LaTeXFunc",
+    "LaTeXEnvFunc",
+    "LaTeXImageDraw",
 
     "MixFont",
     
@@ -40,12 +40,12 @@ __all__ = [
     "high_replaces",
     "replaces",
 
-    "RenderLaTex",
-    "RenderLaTexObjs",
-    "GetLaTexObjs",
+    "RenderLaTeX",
+    "RenderLaTeXObjs",
+    "GetLaTeXObjs",
 
-    "RegisterLaTexEnvFunc",
-    "RegisterLaTexFunc",
+    "RegisterLaTeXEnvFunc",
+    "RegisterLaTeXFunc",
 
     # Settings
     "settings"
