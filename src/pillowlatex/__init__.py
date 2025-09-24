@@ -25,7 +25,7 @@ from . import settings
 from .latexenvfuncs import *
 from .latexfuncs import *
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __all__ = [
     "LaTeXImage",
     "LaTeXFunc",
